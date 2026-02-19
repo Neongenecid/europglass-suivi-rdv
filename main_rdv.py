@@ -7,7 +7,9 @@ from datetime import datetime
 app = FastAPI()
 
 DB_PATH = "rdv.db"
-TECH_API_KEY = "CHANGE_ME_TECH_KEY"
+import os
+TECH_API_KEY = os.getenv("TECH_API_KEY", "")
+
 
 # --- Init DB ---
 def init_db():
