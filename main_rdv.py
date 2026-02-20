@@ -233,6 +233,7 @@ def view_rdv(token: str):
     if status > 3:
         status = 3
 
+    # ✅ MODIF MINIMALE: page client "mono image" (une seule image = étape en cours)
     html = f"""
 <!doctype html>
 <html lang="fr">
@@ -243,180 +244,61 @@ def view_rdv(token: str):
   <style>
     :root {{
       --bg: #0f3a2a;
-      --card: rgba(255,255,255,.92);
-      --muted: rgba(0,0,0,.55);
-      --border: rgba(0,0,0,.12);
     }}
-    body {{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    html, body {{
+      margin: 0;
+      padding: 0;
       background: radial-gradient(1200px 800px at 20% 0%, #1c6a4b 0%, var(--bg) 55%, #0b241a 100%);
-      color:#0b0b0b;
     }}
     .wrap {{
-      max-width: 920px;
+      max-width: 980px;
       margin: 0 auto;
-      padding: 18px 14px 28px;
+      padding: 12px;
     }}
-    .top {{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 18px;
-      padding: 14px;
-      display:flex;
-      align-items:center;
-      gap: 12px;
-      color: #fff;
-      backdrop-filter: blur(6px);
-    }}
-    .logo {{
-      width: 120px;
-      height: auto;
-      display:block;
-      background:#fff;
-      border-radius: 12px;
-      padding: 8px;
-    }}
-    .title {{
-      flex:1;
-      min-width: 0;
-    }}
-    .title h1 {{
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: .3px;
-    }}
-    .title .meta {{
-      margin-top: 6px;
-      font-weight: 700;
-      opacity: .9;
-      font-size: 13px;
-      line-height: 1.35;
-    }}
-    .plate {{
-      display:inline-block;
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-weight: 900;
-      letter-spacing: .8px;
-      margin-top: 8px;
-      font-size: 14px;
-    }}
-
-    .grid {{
-      margin-top: 14px;
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }}
-
-    .step {{
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow:hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.18);
-    }}
-    .step .img {{
+    .img {{
       width: 100%;
       height: auto;
-      display:block;
-    }}
-    .step .bar {{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      gap: 10px;
-    }}
-    .step .label {{
-      font-weight: 900;
-      font-size: 14px;
-    }}
-    .badge {{
-      font-weight: 900;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #f2f2f2;
-      white-space: nowrap;
-    }}
-    .badge.ok {{
-      background: rgba(31,157,99,.12);
-      border-color: rgba(31,157,99,.35);
-      color: #0b5a37;
-    }}
-    .badge.now {{
-      background: rgba(255,255,255,.18);
-      border-color: rgba(255,255,255,.28);
-      color: #0b0b0b;
+      display: block;
+      border-radius: 14px;
+      box-shadow: 0 14px 28px rgba(0,0,0,.25);
+      background: rgba(255,255,255,.06);
     }}
 
+    /* (on garde un footer discret, sans “cadres” supplémentaires) */
     .footer {{
-      margin-top: 14px;
-      color: rgba(255,255,255,.86);
+      margin-top: 10px;
+      color: rgba(255,255,255,.78);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       font-size: 12px;
-      text-align:center;
+      text-align: center;
       opacity: .9;
-    }}
-
-    @media (min-width: 860px) {{
-      .grid {{ grid-template-columns: 1fr 1fr; }}
     }}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <img class="logo" src="{logo}" alt="EverGlass" onerror="this.style.display='none'"/>
-      <div class="title">
-        <h1>Suivi d’intervention EverGlass</h1>
-        <div class="plate" id="plate">{plate}</div>
-        <div class="meta">
-          Dernière mise à jour: <span id="updatedAt">{updated_at}</span> (UTC)
-        </div>
-      </div>
-    </div>
-
-    <div class="grid" id="grid"></div>
-
-    <div class="footer">
-      Cette page se met à jour automatiquement.
-    </div>
+    <img id="stepImage" class="img" src="{imgs[status]}" alt="Suivi RDV" />
+    <div class="footer">Mise à jour automatique</div>
   </div>
 
   <script>
     const token = {token!r};
-    const steps = {STEPS!r};
     const imgs  = {imgs!r};
 
-    function badgeFor(i, status) {{
-      if (i < status) return '<span class="badge ok">Terminé</span>';
-      if (i === status) return '<span class="badge now">En cours</span>';
-      return '<span class="badge">À venir</span>';
+    function clampStatus(s) {{
+      s = parseInt(s || 0, 10);
+      if (isNaN(s)) s = 0;
+      if (s < 0) s = 0;
+      if (s > 3) s = 3;
+      return s;
     }}
 
-    function render(status, plate, updatedAt) {{
-      document.getElementById("plate").textContent = plate || "";
-      document.getElementById("updatedAt").textContent = updatedAt || "";
-
-      const grid = document.getElementById("grid");
-      let html = "";
-      for (let i=0; i<4; i++) {{
-        html += `
-          <div class="step">
-            <img class="img" src="${{imgs[i]}}" alt="${{steps[i]}}">
-            <div class="bar">
-              <div class="label">${{i+1}}. ${{steps[i]}}</div>
-              ${{badgeFor(i, status)}}
-            </div>
-          </div>
-        `;
+    function setImg(status) {{
+      const img = document.getElementById("stepImage");
+      const nextSrc = imgs[status];
+      if (img && img.getAttribute("src") !== nextSrc) {{
+        img.setAttribute("src", nextSrc);
       }}
-      grid.innerHTML = html;
     }}
 
     async function refresh() {{
@@ -424,7 +306,7 @@ def view_rdv(token: str):
         const r = await fetch(`/status/${{token}}`, {{ cache: "no-store" }});
         if (!r.ok) throw new Error("HTTP " + r.status);
         const j = await r.json();
-        render(parseInt(j.status || 0, 10), j.plate || "", j.updated_at || "");
+        setImg(clampStatus(j.status));
       }} catch(e) {{
         document.body.innerHTML = `
           <div style="max-width:720px;margin:30px auto;padding:18px;color:#fff;font-family:system-ui;">
@@ -435,7 +317,7 @@ def view_rdv(token: str):
       }}
     }}
 
-    render({status}, {plate!r}, {updated_at!r});
+    setImg({status});
     setInterval(refresh, 5000);
   </script>
 </body>
