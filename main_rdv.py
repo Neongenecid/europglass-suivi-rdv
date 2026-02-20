@@ -233,7 +233,6 @@ def view_rdv(token: str):
     if status > 3:
         status = 3
 
-    # ✅ MODIF MINIMALE: page client "mono image" (une seule image = étape en cours)
     html = f"""
 <!doctype html>
 <html lang="fr">
@@ -242,47 +241,70 @@ def view_rdv(token: str):
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Suivi RDV EverGlass</title>
   <style>
-    :root {{
-      --bg: #0f3a2a;
-    }}
     html, body {{
       margin: 0;
       padding: 0;
-      background: radial-gradient(1200px 800px at 20% 0%, #1c6a4b 0%, var(--bg) 55%, #0b241a 100%);
+      background: #000;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }}
+
     .wrap {{
       max-width: 980px;
       margin: 0 auto;
       padding: 12px;
     }}
-    .img {{
+
+    .image-container {{
+      position: relative;
+      width: 100%;
+    }}
+
+    .image-container img {{
       width: 100%;
       height: auto;
       display: block;
       border-radius: 14px;
       box-shadow: 0 14px 28px rgba(0,0,0,.25);
-      background: rgba(255,255,255,.06);
     }}
 
-    /* (on garde un footer discret, sans “cadres” supplémentaires) */
-    .footer {{
-      margin-top: 10px;
-      color: rgba(255,255,255,.78);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      font-size: 12px;
+    .overlay {{
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 6%;
       text-align: center;
-      opacity: .9;
+      color: white;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.85);
+    }}
+
+    .plate {{
+      font-weight: 900;
+      font-size: clamp(22px, 4vw, 42px);
+      letter-spacing: 2px;
+    }}
+
+    .updated {{
+      margin-top: 8px;
+      font-size: clamp(12px, 2vw, 18px);
+      font-weight: 600;
+      opacity: .95;
     }}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <img id="stepImage" class="img" src="{imgs[status]}" alt="Suivi RDV" />
-    <div class="footer">Mise à jour automatique</div>
+    <div class="image-container">
+      <img id="stepImage" src="{imgs[status]}" alt="Suivi RDV" />
+      <div class="overlay">
+        <div class="plate" id="plate">{plate}</div>
+        <div class="updated" id="updatedAt">{updated_at}</div>
+      </div>
+    </div>
   </div>
 
   <script>
     const token = {token!r};
+    const steps = {STEPS!r};
     const imgs  = {imgs!r};
 
     function clampStatus(s) {{
@@ -293,12 +315,10 @@ def view_rdv(token: str):
       return s;
     }}
 
-    function setImg(status) {{
-      const img = document.getElementById("stepImage");
-      const nextSrc = imgs[status];
-      if (img && img.getAttribute("src") !== nextSrc) {{
-        img.setAttribute("src", nextSrc);
-      }}
+    function updateOverlay(status, plate, updatedAt) {{
+      document.getElementById("stepImage").src = imgs[status];
+      document.getElementById("plate").textContent = plate || "";
+      document.getElementById("updatedAt").textContent = updatedAt || "";
     }}
 
     async function refresh() {{
@@ -306,7 +326,11 @@ def view_rdv(token: str):
         const r = await fetch(`/status/${{token}}`, {{ cache: "no-store" }});
         if (!r.ok) throw new Error("HTTP " + r.status);
         const j = await r.json();
-        setImg(clampStatus(j.status));
+        updateOverlay(
+          clampStatus(j.status),
+          j.plate || "",
+          j.updated_at || ""
+        );
       }} catch(e) {{
         document.body.innerHTML = `
           <div style="max-width:720px;margin:30px auto;padding:18px;color:#fff;font-family:system-ui;">
@@ -317,7 +341,6 @@ def view_rdv(token: str):
       }}
     }}
 
-    setImg({status});
     setInterval(refresh, 5000);
   </script>
 </body>
