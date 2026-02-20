@@ -9,6 +9,11 @@ import os
 import re
 
 app = FastAPI()
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 BASE_DIR = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
