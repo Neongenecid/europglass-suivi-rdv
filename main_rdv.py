@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import HTMLResponse, JSONResponse
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 import secrets
 import sqlite3
 from datetime import datetime
@@ -7,6 +9,8 @@ import os
 import re
 
 app = FastAPI()
+BASE_DIR = Path(__file__).parent
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 DB_PATH = "rdv.db"
 TECH_API_KEY = os.getenv("TECH_API_KEY", "")
