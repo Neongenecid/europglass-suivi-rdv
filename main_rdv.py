@@ -12,6 +12,17 @@ app = FastAPI()
 BASE_DIR = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+@app.get("/debug/static")
+def debug_static():
+    base = BASE_DIR / "static" / "rdv"
+    if not base.exists():
+        return {"exists": False, "base_dir": str(BASE_DIR), "path": str(base)}
+    files = []
+    for p in base.iterdir():
+        if p.is_file():
+            files.append({"name": p.name, "size": p.stat().st_size})
+    return {"exists": True, "base_dir": str(BASE_DIR), "path": str(base), "files": files}
+
 DB_PATH = "rdv.db"
 TECH_API_KEY = os.getenv("TECH_API_KEY", "")
 
