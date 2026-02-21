@@ -241,64 +241,150 @@ def view_rdv(token: str):
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Suivi RDV EverGlass</title>
   <style>
-    html, body {{
-      margin: 0;
-      padding: 0;
-      background: #000;
+    :root {{
+      --bg: #0f3a2a;
+      --card: rgba(255,255,255,.92);
+      --muted: rgba(0,0,0,.55);
+      --border: rgba(0,0,0,.12);
+    }}
+    body {{
+      margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 20% 0%, #1c6a4b 0%, var(--bg) 55%, #0b241a 100%);
+      color:#0b0b0b;
     }}
-
     .wrap {{
-      max-width: 980px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 12px;
+      padding: 18px 14px 28px;
+    }}
+    .top {{
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      padding: 14px;
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      color: #fff;
+      backdrop-filter: blur(6px);
+    }}
+    .logo {{
+      width: 120px;
+      height: auto;
+      display:block;
+      background:#fff;
+      border-radius: 12px;
+      padding: 8px;
+    }}
+    .title {{
+      flex:1;
+      min-width: 0;
+    }}
+    .title h1 {{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .3px;
+    }}
+    .title .meta {{
+      margin-top: 6px;
+      font-weight: 700;
+      opacity: .9;
+      font-size: 13px;
+      line-height: 1.35;
+    }}
+    .plate {{
+      display:inline-block;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 900;
+      letter-spacing: .8px;
+      margin-top: 8px;
+      font-size: 14px;
     }}
 
-    .image-container {{
-      position: relative;
-      width: 100%;
+    .grid {{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }}
 
-    .image-container img {{
+    .step {{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow:hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    }}
+    .step .img {{
       width: 100%;
       height: auto;
-      display: block;
-      border-radius: 14px;
-      box-shadow: 0 14px 28px rgba(0,0,0,.25);
+      display:block;
     }}
-
-    .overlay {{
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 6%;
-      text-align: center;
-      color: white;
-      text-shadow: 0 4px 12px rgba(0,0,0,0.85);
+    .step .bar {{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      gap: 10px;
     }}
-
-    .plate {{
+    .step .label {{
       font-weight: 900;
-      font-size: clamp(22px, 4vw, 42px);
-      letter-spacing: 2px;
+      font-size: 14px;
+    }}
+    .badge {{
+      font-weight: 900;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f2f2f2;
+      white-space: nowrap;
+    }}
+    .badge.ok {{
+      background: rgba(31,157,99,.12);
+      border-color: rgba(31,157,99,.35);
+      color: #0b5a37;
+    }}
+    .badge.now {{
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.28);
+      color: #0b0b0b;
     }}
 
-    .updated {{
-      margin-top: 8px;
-      font-size: clamp(12px, 2vw, 18px);
-      font-weight: 600;
-      opacity: .95;
+    .footer {{
+      margin-top: 14px;
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      text-align:center;
+      opacity: .9;
+    }}
+
+    @media (min-width: 860px) {{
+      .grid {{ grid-template-columns: 1fr 1fr; }}
     }}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="image-container">
-      <img id="stepImage" src="{imgs[status]}" alt="Suivi RDV" />
-      <div class="overlay">
+    <div class="top">
+      <img class="logo" src="{logo}" alt="EverGlass" onerror="this.style.display='none'"/>
+      <div class="title">
+        <h1>Suivi d’intervention EverGlass</h1>
         <div class="plate" id="plate">{plate}</div>
-        <div class="updated" id="updatedAt">{updated_at}</div>
+        <div class="meta">
+          Dernière mise à jour: <span id="updatedAt">{updated_at}</span> (UTC)
+        </div>
       </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="footer">
+      Cette page se met à jour automatiquement.
     </div>
   </div>
 
@@ -307,18 +393,34 @@ def view_rdv(token: str):
     const steps = {STEPS!r};
     const imgs  = {imgs!r};
 
-    function clampStatus(s) {{
-      s = parseInt(s || 0, 10);
-      if (isNaN(s)) s = 0;
-      if (s < 0) s = 0;
-      if (s > 3) s = 3;
-      return s;
+    // ✅ Cache-buster: change à chaque ouverture de page,
+    // mais reste stable pendant la session (donc pas de re-téléchargement toutes les 5s).
+    const ASSET_V = Date.now();
+
+    function badgeFor(i, status) {{
+      if (i < status) return '<span class="badge ok">Terminé</span>';
+      if (i === status) return '<span class="badge now">En cours</span>';
+      return '<span class="badge">À venir</span>';
     }}
 
-    function updateOverlay(status, plate, updatedAt) {{
-      document.getElementById("stepImage").src = imgs[status];
+    function render(status, plate, updatedAt) {{
       document.getElementById("plate").textContent = plate || "";
       document.getElementById("updatedAt").textContent = updatedAt || "";
+
+      const grid = document.getElementById("grid");
+      let html = "";
+      for (let i=0; i<4; i++) {{
+        html += `
+          <div class="step">
+            <img class="img" src="${{imgs[i]}}?v=${{ASSET_V}}" alt="${{steps[i]}}">
+            <div class="bar">
+              <div class="label">${{i+1}}. ${{steps[i]}}</div>
+              ${{badgeFor(i, status)}}
+            </div>
+          </div>
+        `;
+      }}
+      grid.innerHTML = html;
     }}
 
     async function refresh() {{
@@ -326,11 +428,7 @@ def view_rdv(token: str):
         const r = await fetch(`/status/${{token}}`, {{ cache: "no-store" }});
         if (!r.ok) throw new Error("HTTP " + r.status);
         const j = await r.json();
-        updateOverlay(
-          clampStatus(j.status),
-          j.plate || "",
-          j.updated_at || ""
-        );
+        render(parseInt(j.status || 0, 10), j.plate || "", j.updated_at || "");
       }} catch(e) {{
         document.body.innerHTML = `
           <div style="max-width:720px;margin:30px auto;padding:18px;color:#fff;font-family:system-ui;">
@@ -341,6 +439,7 @@ def view_rdv(token: str):
       }}
     }}
 
+    render({status}, {plate!r}, {updated_at!r});
     setInterval(refresh, 5000);
   </script>
 </body>
