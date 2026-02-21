@@ -220,7 +220,6 @@ def view_rdv(token: str):
     updated_at = data["updated_at"]
 
     # Assets
-    logo = "/static/rdv/everglass_logo.png"
     imgs = [
         "/static/rdv/step0_reception.png",
         "/static/rdv/step1_debut.png",
@@ -241,186 +240,124 @@ def view_rdv(token: str):
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Suivi RDV EverGlass</title>
   <style>
-    :root {{
-      --bg: #0f3a2a;
-      --card: rgba(255,255,255,.92);
-      --muted: rgba(0,0,0,.55);
-      --border: rgba(0,0,0,.12);
-    }}
-    body {{
+    html, body {{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 800px at 20% 0%, #1c6a4b 0%, var(--bg) 55%, #0b241a 100%);
-      color:#0b0b0b;
-    }}
-    .wrap {{
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 18px 14px 28px;
-    }}
-    .top {{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 18px;
-      padding: 14px;
-      display:flex;
-      align-items:center;
-      gap: 12px;
-      color: #fff;
-      backdrop-filter: blur(6px);
-    }}
-    .logo {{
-      width: 120px;
-      height: auto;
-      display:block;
-      background:#fff;
-      border-radius: 12px;
-      padding: 8px;
-    }}
-    .title {{
-      flex:1;
-      min-width: 0;
-    }}
-    .title h1 {{
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: .3px;
-    }}
-    .title .meta {{
-      margin-top: 6px;
-      font-weight: 700;
-      opacity: .9;
-      font-size: 13px;
-      line-height: 1.35;
-    }}
-    .plate {{
-      display:inline-block;
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-weight: 900;
-      letter-spacing: .8px;
-      margin-top: 8px;
-      font-size: 14px;
+      padding:0;
+      background:#000;
+      height:100%;
     }}
 
-    .grid {{
-      margin-top: 14px;
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+    /* 1 image plein écran, sans “cadres” */
+    .stage {{
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
     }}
 
-    .step {{
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      overflow:hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.18);
-    }}
-    .step .img {{
+    /* On garde le ratio de l’image, on remplit l’écran proprement */
+    #stepImg {{
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: contain; /* 🔁 si tu préfères "cover" dis-moi */
       display:block;
+      background:#000;
     }}
-    .step .bar {{
-      display:flex;
-      align-items:center;
+
+    /* Overlay texte */
+    .overlay {{
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      width: min(92vw, 760px);
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
-      gap: 10px;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      color: #fff;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }}
-    .step .label {{
-      font-weight: 900;
-      font-size: 14px;
+
+    .immat {{
+      font-weight: 950;
+      letter-spacing: 1.2px;
+      font-size: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }}
-    .badge {{
-      font-weight: 900;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #f2f2f2;
+
+    .meta {{
+      font-weight: 800;
+      font-size: 13px;
+      opacity: .95;
+      text-align: right;
       white-space: nowrap;
     }}
-    .badge.ok {{
-      background: rgba(31,157,99,.12);
-      border-color: rgba(31,157,99,.35);
-      color: #0b5a37;
-    }}
-    .badge.now {{
-      background: rgba(255,255,255,.18);
-      border-color: rgba(255,255,255,.28);
-      color: #0b0b0b;
+
+    /* Petite discrète pastille “live” */
+    .dot {{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #38d67a;
+      box-shadow: 0 0 0 6px rgba(56,214,122,.18);
+      flex: 0 0 auto;
     }}
 
-    .footer {{
-      margin-top: 14px;
-      color: rgba(255,255,255,.86);
-      font-size: 12px;
-      text-align:center;
-      opacity: .9;
-    }}
-
-    @media (min-width: 860px) {{
-      .grid {{ grid-template-columns: 1fr 1fr; }}
+    .left {{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
     }}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <img class="logo" src="{logo}" alt="EverGlass" onerror="this.style.display='none'"/>
-      <div class="title">
-        <h1>Suivi d’intervention EverGlass</h1>
-        <div class="plate" id="plate">{plate}</div>
-        <div class="meta">
-          Dernière mise à jour: <span id="updatedAt">{updated_at}</span> (UTC)
-        </div>
+  <div class="stage">
+    <img id="stepImg" src="{imgs[status]}" alt="Étape RDV"/>
+    <div class="overlay">
+      <div class="left">
+        <div class="dot" title="Mise à jour automatique"></div>
+        <div class="immat" id="plate">{plate}</div>
       </div>
-    </div>
-
-    <div class="grid" id="grid"></div>
-
-    <div class="footer">
-      Cette page se met à jour automatiquement.
+      <div class="meta">
+        Maj: <span id="updatedAt">{updated_at}</span> UTC
+      </div>
     </div>
   </div>
 
   <script>
     const token = {token!r};
-    const steps = {STEPS!r};
     const imgs  = {imgs!r};
 
-    // ✅ Cache-buster: change à chaque ouverture de page,
-    // mais reste stable pendant la session (donc pas de re-téléchargement toutes les 5s).
-    const ASSET_V = Date.now();
-
-    function badgeFor(i, status) {{
-      if (i < status) return '<span class="badge ok">Terminé</span>';
-      if (i === status) return '<span class="badge now">En cours</span>';
-      return '<span class="badge">À venir</span>';
+    // Anti-cache simple (utile si tu modifies les images et veux voir le changement)
+    function withBust(url) {{
+      const sep = url.includes("?") ? "&" : "?";
+      return url + sep + "v=" + Date.now();
     }}
 
     function render(status, plate, updatedAt) {{
+      const s = Math.min(3, Math.max(0, parseInt(status || 0, 10)));
+      const img = document.getElementById("stepImg");
+      const wanted = imgs[s];
+
+      // Ne change l’image que si l’étape a changé
+      if (!img.dataset.base || img.dataset.base !== wanted) {{
+        img.dataset.base = wanted;
+        img.src = withBust(wanted);
+      }}
+
       document.getElementById("plate").textContent = plate || "";
       document.getElementById("updatedAt").textContent = updatedAt || "";
-
-      const grid = document.getElementById("grid");
-      let html = "";
-      for (let i=0; i<4; i++) {{
-        html += `
-          <div class="step">
-            <img class="img" src="${{imgs[i]}}?v=${{ASSET_V}}" alt="${{steps[i]}}">
-            <div class="bar">
-              <div class="label">${{i+1}}. ${{steps[i]}}</div>
-              ${{badgeFor(i, status)}}
-            </div>
-          </div>
-        `;
-      }}
-      grid.innerHTML = html;
     }}
 
     async function refresh() {{
@@ -428,7 +365,7 @@ def view_rdv(token: str):
         const r = await fetch(`/status/${{token}}`, {{ cache: "no-store" }});
         if (!r.ok) throw new Error("HTTP " + r.status);
         const j = await r.json();
-        render(parseInt(j.status || 0, 10), j.plate || "", j.updated_at || "");
+        render(j.status, j.plate, j.updated_at);
       }} catch(e) {{
         document.body.innerHTML = `
           <div style="max-width:720px;margin:30px auto;padding:18px;color:#fff;font-family:system-ui;">
