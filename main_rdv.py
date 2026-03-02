@@ -219,7 +219,6 @@ def view_rdv(token: str):
     status = int(data["status"])
     updated_at = data["updated_at"]
 
-    # Assets
     imgs = [
         "/static/rdv/step0_reception.png",
         "/static/rdv/step1_debut.png",
@@ -238,7 +237,7 @@ def view_rdv(token: str):
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Suivi RDV EverGlass</title>
+  <title>Suivi RDV EverGlass - VTEST1</title>
   <style>
     html, body {{
       margin:0;
@@ -247,7 +246,6 @@ def view_rdv(token: str):
       height:100%;
     }}
 
-    /* 1 image plein écran, sans “cadres” */
     .stage {{
       position: relative;
       width: 100vw;
@@ -256,108 +254,108 @@ def view_rdv(token: str):
       background: #000;
     }}
 
-    /* On garde le ratio de l’image, on remplit l’écran proprement */
     #stepImg {{
       width: 100%;
       height: 100%;
-      object-fit: contain; /* 🔁 si tu préfères "cover" dis-moi */
+      object-fit: contain; /* ou cover si tu veux remplir en rognant */
       display:block;
       background:#000;
     }}
 
-    /* Overlay texte */
-    .overlay {{
+    /* ==========================
+       RÉGLAGES XY (À MODIFIER)
+       ==========================
+
+       Valeurs possibles:
+       - px (ex: 120px)
+       - %  (ex: 18%)
+       - vw/vh (ex: 12vw / 8vh)
+    */
+    :root {{
+      /* ✅ par défaut en bas */
+      --plate-x: 50%;
+      --plate-y: 75%;
+      --time-x: 50%;
+      --time-y: 75%;
+
+      --plate-size: 34px;
+      --time-size: 22px;
+
+      --text-color: #ffffff;
+      --text-shadow: 0 2px 10px rgba(0,0,0,.65);
+    }}
+
+    .overlayText {{
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 18px;
-      width: min(92vw, 760px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      color: #fff;
-      background: rgba(0,0,0,.55);
-      border: 1px solid rgba(255,255,255,.18);
-      backdrop-filter: blur(6px);
-      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      left: var(--x);
+      top: var(--y);
+      color: var(--text-color);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    }}
-
-    .immat {{
       font-weight: 950;
-      letter-spacing: 1.2px;
-      font-size: 18px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }}
-
-    .meta {{
-      font-weight: 800;
-      font-size: 13px;
-      opacity: .95;
-      text-align: right;
+      letter-spacing: 1px;
+      text-shadow: var(--text-shadow);
+      user-select: none;
+      pointer-events: none;
       white-space: nowrap;
     }}
 
-    /* Petite discrète pastille “live” */
-    .dot {{
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: #38d67a;
-      box-shadow: 0 0 0 6px rgba(56,214,122,.18);
-      flex: 0 0 auto;
+    #plateText {{
+      --x: var(--plate-x);
+      --y: var(--plate-y);
+      font-size: var(--plate-size);
     }}
 
-    .left {{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width: 0;
+    #timeText {{
+      --x: var(--time-x);
+      --y: var(--time-y);
+      font-size: var(--time-size);
+      font-weight: 900;
+      letter-spacing: .2px;
     }}
   </style>
 </head>
 <body>
   <div class="stage">
     <img id="stepImg" src="{imgs[status]}" alt="Étape RDV"/>
-    <div class="overlay">
-      <div class="left">
-        <div class="dot" title="Mise à jour automatique"></div>
-        <div class="immat" id="plate">{plate}</div>
-      </div>
-      <div class="meta">
-        Maj: <span id="updatedAt">{updated_at}</span> UTC
-      </div>
-    </div>
+
+    <div id="plateText" class="overlayText">{plate}</div>
+    <div id="timeText" class="overlayText"></div>
   </div>
 
   <script>
     const token = {token!r};
     const imgs  = {imgs!r};
 
-    // Anti-cache simple (utile si tu modifies les images et veux voir le changement)
     function withBust(url) {{
       const sep = url.includes("?") ? "&" : "?";
       return url + sep + "v=" + Date.now();
     }}
 
+    function toLocalHHhMMmin(isoUtc) {{
+      if (!isoUtc) return "--h--min";
+      // L’API renvoie un ISO UTC sans timezone explicite.
+      // On ajoute "Z" pour forcer UTC, puis on affiche en heure LOCALE du client.
+      const d = new Date(isoUtc + "Z");
+      if (isNaN(d.getTime())) return "--h--min";
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${{hh}}h${{mm}}min`;
+    }}
+
     function render(status, plate, updatedAt) {{
       const s = Math.min(3, Math.max(0, parseInt(status || 0, 10)));
+
+      // Change l’image uniquement si l’étape a changé
       const img = document.getElementById("stepImg");
       const wanted = imgs[s];
-
-      // Ne change l’image que si l’étape a changé
       if (!img.dataset.base || img.dataset.base !== wanted) {{
         img.dataset.base = wanted;
         img.src = withBust(wanted);
       }}
 
-      document.getElementById("plate").textContent = plate || "";
-      document.getElementById("updatedAt").textContent = updatedAt || "";
+      document.getElementById("plateText").textContent = plate || "";
+      document.getElementById("timeText").textContent =
+        "Dernière mise à jour à " + toLocalHHhMMmin(updatedAt);
     }}
 
     async function refresh() {{
@@ -376,6 +374,7 @@ def view_rdv(token: str):
       }}
     }}
 
+    // Render initial (serveur) + auto refresh
     render({status}, {plate!r}, {updated_at!r});
     setInterval(refresh, 5000);
   </script>
