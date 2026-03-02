@@ -7,6 +7,7 @@ import sqlite3
 from datetime import datetime
 import os
 import re
+from typing import Optional
 
 app = FastAPI()
 
@@ -47,7 +48,7 @@ def utc_now_iso() -> str:
     return datetime.utcnow().isoformat(timespec="seconds")
 
 
-def require_api_key(x_api_key: str | None):
+def require_api_key(x_api_key: Optional[str]):
     if not TECH_API_KEY:
         raise HTTPException(status_code=500, detail="Server not configured (TECH_API_KEY missing)")
     if x_api_key != TECH_API_KEY:
@@ -85,7 +86,7 @@ init_db()
 
 # --- Create RDV (tech) ---
 @app.post("/create")
-def create_rdv(plate: str, x_api_key: str = Header(default=None, alias="X-API-Key")):
+def create_rdv(plate: str, x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")):
     require_api_key(x_api_key)
 
     plate_n = normalize_plate(plate)
@@ -106,7 +107,7 @@ def create_rdv(plate: str, x_api_key: str = Header(default=None, alias="X-API-Ke
 
 # --- Update RDV (tech) ---
 @app.post("/update")
-def update_rdv(token: str, status: int, x_api_key: str = Header(default=None, alias="X-API-Key")):
+def update_rdv(token: str, status: int, x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")):
     require_api_key(x_api_key)
 
     if status < 0 or status > 3:
@@ -138,7 +139,7 @@ def update_rdv(token: str, status: int, x_api_key: str = Header(default=None, al
 
 # --- List RDV (tech) ---
 @app.get("/list")
-def list_rdv(x_api_key: str = Header(default=None, alias="X-API-Key")):
+def list_rdv(x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")):
     require_api_key(x_api_key)
 
     conn = sqlite3.connect(DB_PATH)
@@ -170,7 +171,7 @@ def list_rdv(x_api_key: str = Header(default=None, alias="X-API-Key")):
 
 # --- Close RDV (tech) ---
 @app.post("/close")
-def close_rdv(token: str, x_api_key: str = Header(default=None, alias="X-API-Key")):
+def close_rdv(token: str, x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")):
     require_api_key(x_api_key)
 
     now = utc_now_iso()
@@ -271,26 +272,27 @@ def view_rdv(token: str):
        - %  (ex: 18%)
        - vw/vh (ex: 12vw / 8vh)
     */
-    :root{
-        /* Immat au 1er tiers haut (≈ 33% de la hauteur) */
-        --plate-x: 50%;
-        --plate-y: 33%;
+    :root {{
+      /* Immat au 1er tiers haut (≈ 33% de la hauteur) */
+      --plate-x: 50%;
+      --plate-y: 33%;
 
-        /* Dernière mise à jour en bas (≈ 92% de la hauteur) */
-        --time-x: 50%;
-        --time-y: 92%;
+      /* Dernière mise à jour en bas (≈ 92% de la hauteur) */
+      --time-x: 50%;
+      --time-y: 92%;
 
-        --plate-size: 34px;
-        --time-size: 22px;
+      --plate-size: 34px;
+      --time-size: 22px;
 
-        --text-color: #ffffff;
-        --text-shadow: 0 2px 10px rgba(0,0,0,.65);
-        }
+      --text-color: #ffffff;
+      --text-shadow: 0 2px 10px rgba(0,0,0,.65);
+    }}
 
     .overlayText {{
       position: absolute;
       left: var(--x);
       top: var(--y);
+      transform: translateX(-50%); /* ✅ centrage horizontal réel */
       color: var(--text-color);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       font-weight: 950;
