@@ -238,7 +238,7 @@ def view_rdv(token: str):
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Suivi RDV EverGlass - VTEST1</title>
+  <title>Suivi RDV EverGlass</title>
   <style>
     html, body {{
       margin:0;
