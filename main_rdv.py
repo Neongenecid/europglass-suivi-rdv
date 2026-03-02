@@ -271,19 +271,21 @@ def view_rdv(token: str):
        - %  (ex: 18%)
        - vw/vh (ex: 12vw / 8vh)
     */
-    :root {{
-      /* ✅ par défaut en bas */
-      --plate-x: 50%;
-      --plate-y: 75%;
-      --time-x: 50%;
-      --time-y: 75%;
+    :root{
+        /* Immat au 1er tiers haut (≈ 33% de la hauteur) */
+        --plate-x: 50%;
+        --plate-y: 33%;
 
-      --plate-size: 34px;
-      --time-size: 22px;
+        /* Dernière mise à jour en bas (≈ 92% de la hauteur) */
+        --time-x: 50%;
+        --time-y: 92%;
 
-      --text-color: #ffffff;
-      --text-shadow: 0 2px 10px rgba(0,0,0,.65);
-    }}
+        --plate-size: 34px;
+        --time-size: 22px;
+
+        --text-color: #ffffff;
+        --text-shadow: 0 2px 10px rgba(0,0,0,.65);
+        }
 
     .overlayText {{
       position: absolute;
